@@ -59,6 +59,7 @@
 
   const LIVE_VALIDATE_LIMIT = 2 * 1024 * 1024;
   const AUTO_FORMAT_LIMIT = 8 * 1024 * 1024;
+  const AUTO_FORMAT_DELAY = 200;
   const MAX_FILE_SIZE = 40 * 1024 * 1024;
   const HIGHLIGHT_MAX_CHARS = 900000;
   const HIGHLIGHT_MAX_LINES = 15000;
@@ -169,6 +170,7 @@
     },
 
     validateTimer: null,
+    autoFormatTimer: null,
     treeTimer: null,
     dragDepth: 0,
     dragState: null,
@@ -429,7 +431,9 @@
       '  "快捷键": "' +
       mod +
       ' + Enter 格式化",\n' +
-      '  "隐私": "所有处理都在本地完成"\n' +
+      '  "自动格式化": "输入后 ' +
+      AUTO_FORMAT_DELAY +
+      'ms 更新"\n' +
       "}";
   }
 
@@ -439,7 +443,7 @@
 
   const EMPTY_STATE_COPY = {
     title: "把 JSON 放进来",
-    text: "在左侧粘贴、拖入文件，或载入示例。格式化、校验和结构浏览都在本地完成。",
+    text: "在左侧粘贴、拖入文件，或载入示例。格式化、校验和结构浏览都会即时更新。",
   };
 
   function updateEmptyStateCopy() {
@@ -461,9 +465,9 @@
     if (status === "valid") {
       dom.emptyTitle.textContent = "JSON 已就绪";
       dom.emptyText.textContent =
-        "语法检查通过。点击“格式化”，或按 " +
+        "语法检查通过，格式化结果会自动更新。也可以点击“格式化”，或按 " +
         (isMac ? "⌘ + Enter" : "Ctrl + Enter") +
-        " 查看结果。";
+        " 立即生成。";
     } else if (status === "invalid") {
       dom.emptyTitle.textContent = "JSON 还有语法错误";
       dom.emptyText.textContent =
@@ -639,6 +643,54 @@
       clearTimeout(state.validateTimer);
       state.validateTimer = null;
     }
+  }
+
+  function cancelAutoFormat() {
+    if (state.autoFormatTimer) {
+      clearTimeout(state.autoFormatTimer);
+      state.autoFormatTimer = null;
+    }
+  }
+
+  function scheduleAutoFormat() {
+    cancelAutoFormat();
+
+    if (dom.input.value.length > AUTO_FORMAT_LIMIT) return;
+
+    state.autoFormatTimer = setTimeout(runAutoFormat, AUTO_FORMAT_DELAY);
+  }
+
+  function runAutoFormat() {
+    state.autoFormatTimer = null;
+    const text = dom.input.value;
+
+    if (!text.trim()) {
+      cancelValidation();
+      state.live = {
+        status: "empty",
+        stats: null,
+        warnings: [],
+        error: null,
+      };
+
+      if (state.view !== "empty") {
+        clearOutputData();
+        state.view = "empty";
+        state.activeTab = "result";
+        updateChrome();
+      }
+
+      updateStatus();
+      return;
+    }
+
+    if (text.length > AUTO_FORMAT_LIMIT) return;
+
+    processJson("formatted", {
+      quiet: true,
+      auto: true,
+      preserveScroll: true,
+    });
   }
 
   /* ============================================================
@@ -1020,6 +1072,8 @@
     const opts = options || {};
     const text = dom.input.value;
 
+    cancelAutoFormat();
+
     if (!text.trim()) {
       if (!opts.quiet) {
         showToast("先粘贴或输入一些 JSON 再试", { tone: "warning" });
@@ -1032,6 +1086,7 @@
     try {
       parsed = Core.parseJson(text);
     } catch (error) {
+      if (opts.auto) return false;
       cancelValidation();
       state.mode = mode;
       showParseError(error, text);
@@ -1076,12 +1131,15 @@
 
     if (state.activeTab !== "tree") state.activeTab = "result";
 
-    renderOutput({ animate: !opts.quiet, preserveScroll: false });
+    renderOutput({
+      animate: !opts.quiet && !opts.auto,
+      preserveScroll: !!opts.preserveScroll,
+    });
     updateStatus();
     updateChrome();
 
     if (state.activeTab === "tree") {
-      renderTree({ preserveScroll: false });
+      renderTree({ preserveScroll: !!opts.preserveScroll });
     }
 
     return true;
@@ -1225,7 +1283,9 @@
       dom.resultStats.title = "";
     }
 
-    dom.inputHint.textContent = state.fileName || "粘贴，或拖入文件";
+    dom.inputHint.textContent =
+      state.fileName ||
+      "自动格式化已开启 · " + AUTO_FORMAT_DELAY + "ms";
     dom.inputHint.title = state.fileName || "";
     dom.clearBtn.disabled = dom.input.value.length === 0;
 
@@ -1276,6 +1336,7 @@
     updateEditorMetrics();
     refreshStale();
     scheduleValidation();
+    scheduleAutoFormat();
     updateChrome();
   }
 
@@ -1897,6 +1958,7 @@
     if (!snapshot) return;
 
     cancelValidation();
+    cancelAutoFormat();
     cancelTreeSearchTimer();
 
     dom.input.value = snapshot.text;
@@ -1975,6 +2037,7 @@
     const snapshot = captureSnapshot();
 
     cancelValidation();
+    cancelAutoFormat();
     dom.input.value = "";
     state.fileName = null;
     state.view = "empty";
@@ -2002,6 +2065,7 @@
     const snapshot = hasExisting ? captureSnapshot() : null;
 
     cancelValidation();
+    cancelAutoFormat();
     dom.input.value = SAMPLE_JSON;
     state.fileName = null;
     state.view = "empty";
@@ -2046,6 +2110,8 @@
 
   async function handleFile(file) {
     if (!file) return;
+
+    cancelAutoFormat();
 
     if (!isReadableFile(file)) {
       showToast("请打开 .json 或文本文件", { tone: "warning" });
@@ -2430,9 +2496,7 @@
 
       if (state.view === "result" && state.ast) {
         if (state.stale) {
-          showToast("输入已修改，重新格式化后缩进才会生效", {
-            tone: "warning",
-          });
+          scheduleAutoFormat();
         } else if (state.mode !== "minified") {
           rebuildOutput();
         }
@@ -2446,9 +2510,7 @@
 
       if (state.view === "result" && state.ast) {
         if (state.stale) {
-          showToast("输入已修改，重新格式化后排序才会生效", {
-            tone: "warning",
-          });
+          scheduleAutoFormat();
         } else {
           rebuildOutput();
         }

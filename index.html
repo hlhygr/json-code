@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <title>JSON Code — 清爽的 JSON 格式化工具</title>
-  <meta name="description" content="一个无广告、不上传数据、离线可用的 JSON 格式化与校验工具。保留大整数精度，支持树形浏览。">
+  <meta name="description" content="一个清爽、零依赖的 JSON 格式化与校验工具，支持精确错误定位、大整数保留和树形浏览。">
   <meta name="theme-color" content="#f3f1ea">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <script>
@@ -70,10 +70,6 @@
     <symbol id="i-moon" viewBox="0 0 24 24">
       <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
     </symbol>
-    <symbol id="i-lock" viewBox="0 0 24 24">
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    </symbol>
     <symbol id="i-search" viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
     </symbol>
@@ -103,9 +99,6 @@
       <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
       <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
     </symbol>
-    <symbol id="i-command" viewBox="0 0 24 24">
-      <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>
-    </symbol>
   </svg>
 
   <div class="app">
@@ -117,7 +110,6 @@
         <div class="brand-text">
           <div class="brand-title-row">
             <h1>JSON Code</h1>
-            <span class="badge-no-ads"><span class="badge-dot"></span>本地 · 无广告</span>
           </div>
           <p class="brand-subtitle">格式化、校验、看清每一层结构</p>
         </div>
@@ -178,7 +170,7 @@
             placeholder='{
   "提示": "在这里粘贴 JSON",
   "快捷键": "⌘ + Enter 格式化",
-  "隐私": "所有处理都在本地完成"
+  "自动格式化": "输入后 200ms 更新"
 }'
             spellcheck="false"
             autocapitalize="off"
@@ -194,7 +186,7 @@
             <span class="dot-divider" aria-hidden="true"></span>
             <span id="charCount">0 字符</span>
           </div>
-          <span class="foot-hint" id="inputHint">粘贴，或拖入文件</span>
+          <span class="foot-hint" id="inputHint">自动格式化已开启 · 200ms</span>
         </footer>
       </section>
 
@@ -230,11 +222,10 @@
               <span class="empty-brace">}</span>
             </div>
             <h2>把 JSON 放进来</h2>
-            <p>在左侧粘贴、拖入文件，或载入示例。格式化、校验和结构浏览都在本地完成。</p>
+            <p>在左侧粘贴、拖入文件，或载入示例。格式化、校验和结构浏览都会即时更新。</p>
             <div class="feature-chips" aria-label="特性">
-              <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>数据不上传</span>
+              <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-shield-check"/></svg>严格 JSON 校验</span>
               <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>大整数不丢精度</span>
-              <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>无广告</span>
             </div>
             <button class="text-link" id="emptySampleBtn" type="button">
               载入一份示例
@@ -310,10 +301,6 @@
         <span><kbd id="hintFormat">⌘↵</kbd> 格式化</span>
         <span><kbd id="hintMinify">⌘⇧M</kbd> 压缩</span>
         <span><kbd>⌘O</kbd> 打开</span>
-      </div>
-      <div class="status-privacy">
-        <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
-        <span>数据仅在本地处理</span>
       </div>
     </footer>
   </div>
