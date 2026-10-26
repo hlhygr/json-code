@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>JSON Code — 清爽的 JSON 格式化工具</title>
+  <meta name="description" content="一个无广告、不上传数据、离线可用的 JSON 格式化与校验工具。保留大整数精度，支持树形浏览。">
+  <meta name="theme-color" content="#f3f1ea">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script>
+    /* Apply the saved theme before first paint to avoid a flash. */
+    (function () {
+      try {
+        var saved = localStorage.getItem("jsoncode.theme");
+        if (saved !== "light" && saved !== "dark") {
+          saved = window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        }
+        document.documentElement.dataset.theme = saved;
+      } catch (error) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="json-core.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-shield-check" viewBox="0 0 24 24">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+      <path d="m9 12 2 2 4-4"/>
+    </symbol>
+    <symbol id="i-compress" viewBox="0 0 24 24">
+      <path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/>
+    </symbol>
+    <symbol id="i-braces" viewBox="0 0 24 24">
+      <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"/>
+      <path d="M16 3h1a2 2 0 0 1 2 2v5c0 1.1.9 2 2 2a2 2 0 0 1-2 2v5a2 2 0 0 1-2 2h-1"/>
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24">
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>
+    </symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24">
+      <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+      <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>
+      <path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-unfold" viewBox="0 0 24 24">
+      <path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>
+    </symbol>
+    <symbol id="i-fold" viewBox="0 0 24 24">
+      <path d="m7 20 5-5 5 5"/><path d="m7 4 5 5 5-5"/>
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+      <path d="M12 9v4"/><path d="M12 17h.01"/>
+    </symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
+    </symbol>
+    <symbol id="i-locate" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>
+      <circle cx="12" cy="12" r="8"/>
+    </symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24">
+      <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+      <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+    </symbol>
+    <symbol id="i-command" viewBox="0 0 24 24">
+      <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>
+    </symbol>
+  </svg>
+
+  <div class="app">
+    <header class="appbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span>{</span><span>}</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1>JSON Code</h1>
+            <span class="badge-no-ads"><span class="badge-dot"></span>本地 · 无广告</span>
+          </div>
+          <p class="brand-subtitle">格式化、校验、看清每一层结构</p>
+        </div>
+      </div>
+
+      <div class="app-actions">
+        <button class="btn btn-quiet" id="validateBtn" type="button" title="只校验，不改变结果">
+          <svg class="icon" aria-hidden="true"><use href="#i-shield-check"/></svg>
+          <span class="btn-label">校验</span>
+        </button>
+        <button class="btn btn-quiet" id="minifyBtn" type="button" title="压缩为一行">
+          <svg class="icon" aria-hidden="true"><use href="#i-compress"/></svg>
+          <span class="btn-label">压缩</span>
+        </button>
+        <button class="btn btn-primary" id="formatBtn" type="button" title="格式化 JSON">
+          <svg class="icon" aria-hidden="true"><use href="#i-braces"/></svg>
+          <span>格式化</span>
+          <kbd class="shortcut" id="formatKbd">⌘↵</kbd>
+        </button>
+        <span class="appbar-divider" aria-hidden="true"></span>
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="切换浅色/深色主题" title="切换主题">
+          <svg class="icon theme-icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+          <svg class="icon theme-icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace" id="workspace">
+      <section class="pane input-pane" aria-label="JSON 输入">
+        <header class="pane-head">
+          <div class="pane-title">
+            <span class="pane-status-dot" aria-hidden="true"></span>
+            <span>输入</span>
+            <span class="type-chip">JSON</span>
+          </div>
+          <div class="pane-tools">
+            <button class="tool-btn" id="openBtn" type="button" title="打开本地 JSON 文件">
+              <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg>
+              <span>打开</span>
+            </button>
+            <button class="tool-btn" id="sampleBtn" type="button" title="载入示例数据">
+              <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+              <span>示例</span>
+            </button>
+            <button class="tool-btn tool-btn-danger" id="clearBtn" type="button" title="清空输入">
+              <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>
+              <span>清空</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="editor-shell">
+          <div class="editor-gutter" id="inputGutter" aria-hidden="true">1</div>
+          <textarea
+            id="input"
+            class="editor-input"
+            aria-label="JSON 输入区"
+            placeholder='{
+  "提示": "在这里粘贴 JSON",
+  "快捷键": "⌘ + Enter 格式化",
+  "隐私": "所有处理都在本地完成"
+}'
+            spellcheck="false"
+            autocapitalize="off"
+            autocorrect="off"
+            autocomplete="off"
+            wrap="off"
+          ></textarea>
+        </div>
+
+        <footer class="pane-foot">
+          <div class="foot-group">
+            <span id="positionText">第 1 行，第 1 列</span>
+            <span class="dot-divider" aria-hidden="true"></span>
+            <span id="charCount">0 字符</span>
+          </div>
+          <span class="foot-hint" id="inputHint">粘贴，或拖入文件</span>
+        </footer>
+      </section>
+
+      <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="调整编辑区宽度" tabindex="0">
+        <span aria-hidden="true"></span>
+      </div>
+
+      <section class="pane output-pane" aria-label="处理结果">
+        <header class="pane-head pane-head-output">
+          <div class="tabs" role="tablist" aria-label="结果视图">
+            <button class="tab" id="resultTab" type="button" role="tab" aria-selected="true" aria-controls="resultPanel" data-tab="result">结果</button>
+            <button class="tab" id="treeTab" type="button" role="tab" aria-selected="false" aria-controls="treePanel" data-tab="tree">结构</button>
+          </div>
+          <div class="pane-tools">
+            <span class="stale-badge" id="staleBadge" hidden>内容已修改</span>
+            <span class="result-mode" id="resultMode" hidden>已格式化</span>
+            <button class="tool-btn" id="copyBtn" type="button" title="复制结果" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>
+              <span>复制</span>
+            </button>
+            <button class="tool-btn" id="downloadBtn" type="button" title="下载结果" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+              <span>下载</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="result-shell">
+          <section class="empty-state" id="emptyState">
+            <div class="empty-art" aria-hidden="true">
+              <span class="empty-brace">{</span>
+              <span class="empty-slash">/</span>
+              <span class="empty-brace">}</span>
+            </div>
+            <h2>把 JSON 放进来</h2>
+            <p>在左侧粘贴、拖入文件，或载入示例。格式化、校验和结构浏览都在本地完成。</p>
+            <div class="feature-chips" aria-label="特性">
+              <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>数据不上传</span>
+              <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>大整数不丢精度</span>
+              <span class="feature-chip"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>无广告</span>
+            </div>
+            <button class="text-link" id="emptySampleBtn" type="button">
+              载入一份示例
+              <svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
+            </button>
+          </section>
+
+          <section class="error-view" id="errorView" hidden aria-live="polite"></section>
+
+          <section class="tree-view" id="treePanel" role="tabpanel" aria-labelledby="treeTab" hidden>
+            <div class="tree-toolbar">
+              <label class="tree-search" for="treeSearch">
+                <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+                <input id="treeSearch" type="search" placeholder="搜索键或值" aria-label="搜索键或值" autocomplete="off" spellcheck="false">
+              </label>
+              <span class="tree-match" id="treeMatch" hidden></span>
+              <button class="icon-btn icon-btn-sm" id="expandAllBtn" type="button" title="全部展开" aria-label="全部展开">
+                <svg class="icon" aria-hidden="true"><use href="#i-unfold"/></svg>
+              </button>
+              <button class="icon-btn icon-btn-sm" id="collapseAllBtn" type="button" title="全部折叠" aria-label="全部折叠">
+                <svg class="icon" aria-hidden="true"><use href="#i-fold"/></svg>
+              </button>
+            </div>
+            <div class="tree-scroll" id="treeScroll">
+              <div class="tree-root" id="treeRoot"></div>
+              <p class="tree-no-match" id="treeNoMatch" hidden>没有找到匹配的键或值</p>
+            </div>
+          </section>
+
+          <section class="code-view" id="resultPanel" role="tabpanel" aria-labelledby="resultTab" hidden>
+            <div class="notice notice-warn" id="warningNotice" hidden>
+              <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+              <div class="notice-text" id="warningText"></div>
+            </div>
+            <div class="code-scroll" id="codeScroll">
+              <div class="code-inner">
+                <pre class="code-gutter" id="outputGutter" aria-hidden="true"></pre>
+                <pre class="code-pre"><code id="outputCode"></code></pre>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="pane-foot pane-foot-output">
+          <span class="result-stats" id="resultStats">等待格式化</span>
+          <div class="foot-actions">
+            <label class="mini-field" for="indentSelect">
+              <span>缩进</span>
+              <span class="select-control">
+                <select id="indentSelect">
+                  <option value="2">2 空格</option>
+                  <option value="4">4 空格</option>
+                  <option value="tab">Tab</option>
+                </select>
+                <svg class="icon select-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+              </span>
+            </label>
+            <button class="chip-toggle" id="sortBtn" type="button" aria-pressed="false" title="按键名 A → Z 排序">
+              <span class="sort-mark" aria-hidden="true">A→Z</span>
+              <span>键排序</span>
+            </button>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <button class="status-pill" id="statusPill" type="button" data-state="empty">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="statusText">等待输入</span>
+      </button>
+      <div class="status-hints" aria-hidden="true">
+        <span><kbd id="hintFormat">⌘↵</kbd> 格式化</span>
+        <span><kbd id="hintMinify">⌘⇧M</kbd> 压缩</span>
+        <span><kbd>⌘O</kbd> 打开</span>
+      </div>
+      <div class="status-privacy">
+        <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+        <span>数据仅在本地处理</span>
+      </div>
+    </footer>
+  </div>
+
+  <input type="file" id="fileInput" accept=".json,.txt,.geojson,.har,application/json,text/plain" hidden>
+
+  <div class="drop-overlay" id="dropOverlay" hidden>
+    <div class="drop-card">
+      <div class="drop-icon"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></div>
+      <strong>松开以载入 JSON 文件</strong>
+      <span>文件内容不会离开这台设备</span>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
+</body>
+</html>
